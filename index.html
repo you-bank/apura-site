@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3+KgbDkisfF6cJ1tvjQ4Qus7zYSyov6hn7UskuxFSTY='; style-src 'sha256-SUFIK3kJldiqsURjb5cUuV2esUk1mLE/EEAvrzeSpXo=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apura: conferência da apuração assistida de CBS</title>
+<meta name="description" content="Conferidor da apuração assistida de CBS para escritórios contábeis: coleta, cruza com as NF-e de cada cliente e entrega uma fila de exceções com prazo e registro de quem conferiu. Lista de espera aberta.">
+<meta name="theme-color" content="#F9FCFA">
+<meta name="color-scheme" content="light">
+<link rel="canonical" href="https://apura.lumecoding.com/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Apura">
+<meta property="og:title" content="Apura: conferência da apuração assistida de CBS">
+<meta property="og:description" content="Conferidor da apuração assistida de CBS para escritórios contábeis: coleta, cruza com as NF-e de cada cliente e entrega uma fila de exceções com prazo e registro de quem conferiu. Lista de espera aberta.">
+<meta property="og:url" content="https://apura.lumecoding.com/">
+<meta property="og:image" content="https://apura.lumecoding.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Apura: antes que o prazo passe, confira a CBS de toda a carteira.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Apura: conferência da apuração assistida de CBS">
+<meta name="twitter:description" content="Conferidor da apuração assistida de CBS para escritórios contábeis: coleta, cruza com as NF-e de cada cliente e entrega uma fila de exceções com prazo e registro de quem conferiu. Lista de espera aberta.">
+<meta name="twitter:image" content="https://apura.lumecoding.com/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Conceito: página de razão em papel verde-técnico. Uma coisa ousada (o painel de conferência que se marca sozinho); o resto é quieto. */
+:root {
+  --bg: #F9FCFA;
+  --surface: #FFFFFF;
+  --surface-2: #EEF5F1;
+  --ink: #0E2620;
+  --muted: #4B635B;
+  --line: #CFDCD5;
+  --accent: #0B8A57;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #D6EFE3;
+  --warn: #B26A00;
+  --warn-soft: #FBEBCB;
+  --bad: #B8362A;
+  --bad-soft: #F8DAD5;
+  --glow-a: #C4F0DB;
+  --glow-b: #D3EAF8;
+  --shadow: 0 1px 2px rgba(14,38,32,.05), 0 12px 32px rgba(14,38,32,.08);
+  color-scheme: light;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r: 14px;
+  --maxw: 1120px;
+}
+/* Tema claro fixo de propósito: página de venda clara, em qualquer configuração do sistema. */
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 17px/1.6 var(--f-body);
+  padding-block: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow-x: hidden;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--bg); }
+img, svg { max-width: 100%; }
+a { color: inherit; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.08; margin: 0; text-wrap: balance; letter-spacing: -.02em; }
+p { margin: 0; }
+.wrap { max-width: var(--maxw); margin-inline: auto; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font: 500 12.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.progress { position: fixed; left: 0; top: env(safe-area-inset-top, 0px); height: 3px; width: 100%; z-index: 70; background: transparent; pointer-events: none; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); }
+
+/* Cabeçalho */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 24px; min-height: 64px; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font: 800 22px/1 var(--f-display); text-decoration: none; letter-spacing: -.03em; }
+.logo svg { width: 28px; height: 28px; }
+.nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; font-weight: 500; }
+.nav a { text-decoration: none; color: var(--muted); }
+.nav a:hover { color: var(--ink); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; cursor: pointer; text-decoration: none; font: 600 16px/1 var(--f-body); padding: 15px 22px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); transition: transform .18s ease, box-shadow .18s ease; box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 45%, transparent); }
+.btn svg { width: 18px; height: 18px; }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: none; border: 1.5px solid var(--line); }
+.btn.ghost:hover { border-color: var(--accent); box-shadow: none; }
+.btn.small { padding: 11px 16px; font-size: 14.5px; }
+
+/* Hero */
+.hero { position: relative; padding-block: 64px 72px; isolation: isolate; }
+.hero::before, .hero::after { content: ""; position: absolute; z-index: -1; border-radius: 50%; filter: blur(70px); opacity: .7; }
+.hero::before { width: 520px; height: 520px; left: -140px; top: -80px; background: var(--glow-a); animation: drift 16s ease-in-out infinite alternate; }
+.hero::after { width: 460px; height: 460px; right: -120px; top: 120px; background: var(--glow-b); animation: drift 20s ease-in-out infinite alternate-reverse; }
+@keyframes drift { to { transform: translate(60px, 40px) scale(1.12); } }
+.grid-bg { position: absolute; inset: 0; z-index: -1; opacity: .5; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 44px 44px; mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 72%); }
+.hero-in { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 500; color: var(--muted); }
+.pill b { color: var(--accent); font-weight: 600; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 var(--accent); animation: ping 2s infinite; }
+@keyframes ping { 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.hero h1 { font-size: clamp(2.5rem, 5.6vw, 4.3rem); font-weight: 800; margin-block: 22px 20px; }
+.hero h1 em { font-style: normal; background: linear-gradient(transparent 62%, var(--accent-soft) 62%); padding-inline: 2px; }
+.lede { font-size: 1.2rem; color: var(--muted); max-width: 34em; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
+.fine { margin-top: 18px; font-size: 14px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fine svg { width: 16px; height: 16px; color: var(--accent); flex: none; }
+
+/* Painel de conferência */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; transform: rotate(-.6deg); animation: floaty 7s ease-in-out infinite; }
+@keyframes floaty { 50% { transform: translateY(-8px) rotate(.2deg); } }
+.panel-h { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.lights { display: flex; gap: 6px; } .lights i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.panel-h .t { font: 500 13px/1 var(--f-mono); color: var(--muted); margin-left: 4px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag-ex { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); }
+.rows { padding: 8px 10px 12px; }
+.row { display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; align-items: center; padding: 11px 10px; border-radius: 10px; font-size: 14.5px; }
+.row .k { min-width: 0; }
+.row .k b { font-weight: 600; display: block; }
+.row .k span { font: 400 12px/1.4 var(--f-mono); color: var(--muted); }
+.row .v { font: 500 13.5px/1 var(--f-mono); color: var(--muted); text-align: right; }
+.chk { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; color: var(--accent-ink); position: relative; }
+.chk svg { width: 14px; height: 14px; stroke-dasharray: 24; stroke-dashoffset: 24; }
+.row.ok .chk { animation: fillok .3s ease forwards; animation-delay: var(--d); }
+.row.ok .chk svg { animation: draw .45s ease forwards; animation-delay: calc(var(--d) + .12s); }
+@keyframes fillok { to { background: var(--accent); border-color: var(--accent); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.row.warn { background: var(--warn-soft); }
+.row.warn .chk { background: var(--warn); border-color: var(--warn); }
+.row.warn .chk svg { stroke-dashoffset: 0; }
+.row.bad { background: var(--bad-soft); animation: pulsebad 3.2s ease-in-out 3.2s infinite; }
+.row.bad .chk { background: var(--bad); border-color: var(--bad); }
+.row.bad .chk svg { stroke-dashoffset: 0; }
+@keyframes pulsebad { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--bad) 25%, transparent); } }
+.row.bad .v { color: var(--bad); font-weight: 600; }
+.row.warn .v { color: var(--warn); font-weight: 600; }
+.hint { margin: 2px 10px 10px; padding: 14px 16px; border-radius: 12px; border: 1px dashed var(--accent); background: var(--accent-soft); font-size: 14px; line-height: 1.5; }
+.hint b { display: block; font: 600 12px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 7px; }
+.hint small { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; }
+.panel-f { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--line); font: 400 12px/1.4 var(--f-mono); color: var(--muted); }
+
+/* Faixa de tipos */
+.marquee { border-block: 1px solid var(--line); background: var(--surface); margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); overflow: hidden; }
+.track { display: flex; gap: 14px; width: max-content; padding: 16px 0; animation: slide 46s linear infinite; }
+.marquee:hover .track { animation-play-state: paused; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line); font: 500 13px/1 var(--f-mono); white-space: nowrap; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.chip.w i { background: var(--warn); } .chip.b i { background: var(--bad); }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* Seções */
+section { padding-block: 84px; }
+.sec-h { max-width: 42em; margin-bottom: 44px; }
+.sec-h h2 { font-size: clamp(1.9rem, 3.8vw, 2.9rem); font-weight: 800; margin-top: 14px; }
+.sec-h p { margin-top: 16px; color: var(--muted); font-size: 1.1rem; }
+
+.reveal { transition: opacity .6s ease, transform .6s ease; }
+.reveal.pre { opacity: 0; transform: translateY(22px); }
+
+/* Problema */
+.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; display: flex; flex-direction: column; gap: 14px; }
+.ico { width: 46px; height: 46px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; transition: transform .25s ease; }
+.ico svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fact:hover .ico, .feat:hover .ico { transform: rotate(-8deg) scale(1.08); }
+.fact h3 { font-size: 1.25rem; font-weight: 600; }
+.fact p { color: var(--muted); font-size: 16px; }
+.src { font-size: 13.5px; color: var(--muted); margin-top: 22px; }
+
+/* Como funciona */
+.flow { background: var(--surface); border-block: 1px solid var(--line); margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: s; position: relative; }
+.step { position: relative; padding: 26px; border-radius: var(--r); border: 1px solid var(--line); background: var(--bg); }
+.step::before { counter-increment: s; content: counter(s); position: absolute; top: -18px; left: 22px; width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font: 800 17px/1 var(--f-display); }
+.step h3 { font-size: 1.3rem; font-weight: 600; margin: 8px 0 10px; }
+.step p { color: var(--muted); font-size: 16px; }
+.diagram { margin-top: 44px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); padding: 18px; overflow-x: auto; }
+.diagram svg { display: block; min-width: 680px; width: 100%; height: auto; }
+.dash { stroke-dasharray: 6 8; animation: dashmove 1.2s linear infinite; }
+@keyframes dashmove { to { stroke-dashoffset: -14; } }
+
+/* Recursos */
+.feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.feat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; display: flex; flex-direction: column; gap: 12px; transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+.feat:hover { transform: translateY(-5px); box-shadow: var(--shadow); border-color: var(--accent); }
+.feat h3 { font-size: 1.18rem; font-weight: 600; }
+.feat p { color: var(--muted); font-size: 15.5px; }
+.badge { align-self: flex-start; margin-top: auto; padding: 5px 9px; border-radius: 6px; font: 500 11.5px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; background: var(--accent-soft); color: var(--accent); }
+.badge.soon { background: var(--surface-2); color: var(--muted); }
+
+/* Antes e depois */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.col { border-radius: var(--r); padding: 28px; border: 1px solid var(--line); background: var(--surface); }
+.col.good { border-color: var(--accent); background: linear-gradient(180deg, var(--accent-soft), var(--surface) 58%); }
+.col h3 { font-size: 1.3rem; font-weight: 600; margin-bottom: 18px; }
+.col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.col li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; font-size: 16px; }
+.col li svg { width: 20px; height: 20px; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; margin-top: 3px; }
+.col.bad-c li svg { stroke: var(--bad); } .col.good li svg { stroke: var(--accent); }
+
+/* Honorários */
+.money { display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: center; background: linear-gradient(135deg, var(--accent-soft), var(--surface) 70%); color: var(--ink); border: 1px solid var(--line); border-radius: 22px; padding: 44px; }
+.money h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); font-weight: 800; }
+.money p { margin-top: 16px; color: var(--muted); }
+.money .eyebrow { color: var(--accent); }
+.calc { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 16px; padding: 22px; display: grid; gap: 14px; }
+.calc-r { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; }
+.calc-r span:last-child { font: 500 15px/1 var(--f-mono); }
+.calc hr { border: 0; border-top: 1px dashed var(--line); width: 100%; margin: 0; }
+.calc .tot { font-weight: 600; font-size: 17px; }
+.calc small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+
+/* Para quem */
+.who { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.who .col h3 { display: flex; align-items: center; gap: 10px; }
+
+/* Segurança */
+.sec-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.sec-it { padding: 22px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); display: grid; gap: 10px; align-content: start; }
+.sec-it h3 { font-size: 1.05rem; font-weight: 600; }
+.sec-it p { font-size: 14.5px; color: var(--muted); }
+
+/* FAQ */
+.faq { display: grid; gap: 12px; max-width: 820px; }
+details { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 0 22px; transition: border-color .2s; }
+details[open] { border-color: var(--accent); }
+summary { cursor: pointer; list-style: none; padding: 20px 0; font: 600 17px/1.4 var(--f-body); display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font: 400 26px/1 var(--f-mono); color: var(--accent); transition: transform .2s; flex: none; }
+details[open] summary::after { transform: rotate(45deg); }
+details p { padding-bottom: 20px; color: var(--muted); font-size: 16px; }
+
+/* CTA final */
+.final { position: relative; overflow: hidden; border-radius: 24px; padding: 52px; background: var(--surface); border: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 40px; isolation: isolate; }
+.final::before { content: ""; position: absolute; width: 420px; height: 420px; right: -120px; top: -160px; border-radius: 50%; background: var(--glow-a); filter: blur(70px); opacity: .6; z-index: -1; }
+.final h2 { font-size: clamp(1.9rem, 3.6vw, 2.8rem); font-weight: 800; }
+.final p.sub { margin-top: 16px; color: var(--muted); }
+.checks { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 10px; }
+.checks li { display: flex; gap: 10px; font-size: 16px; }
+.checks svg { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; margin-top: 3px; }
+form { display: grid; gap: 14px; align-content: start; }
+label { font-size: 14px; font-weight: 600; display: grid; gap: 6px; }
+input, select, textarea { font: 400 16px/1.3 var(--f-body); padding: 13px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+input:focus, select:focus, textarea:focus { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); border-color: var(--accent); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.result { display: none; padding: 16px; border-radius: 12px; border: 1px dashed var(--accent); background: var(--accent-soft); font-size: 14.5px; gap: 12px; }
+.result.on { display: grid; }
+.result pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 400 13px/1.55 var(--f-mono); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; user-select: all; }
+.contact { font: 500 14px/1.5 var(--f-mono); }
+
+footer { padding-block: 40px 56px; font-size: 14px; color: var(--muted); display: grid; gap: 10px; }
+footer .wrap { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 28px; }
+
+@media (max-width: 960px) {
+  .hero-in, .money, .final, .vs, .who { grid-template-columns: 1fr; }
+  .three, .steps, .feats { grid-template-columns: 1fr; }
+  .sec-grid { grid-template-columns: 1fr 1fr; }
+  .nav a:not(.keep) { display: none; }
+  .money, .final { padding: 30px 22px; }
+  section { padding-block: 60px; }
+  .steps { gap: 34px; }
+}
+@media (max-width: 520px) {
+  .sec-grid, .two { grid-template-columns: 1fr; }
+  body { font-size: 16.5px; }
+  .hero { padding-block: 40px 52px; }
+  .btn { width: 100%; }
+  .nav .btn { width: auto; }
+  .row { grid-template-columns: 24px 1fr; }
+  .row .v { grid-column: 2; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .row.ok .chk { background: var(--accent); border-color: var(--accent); }
+  .row.ok .chk svg { stroke-dashoffset: 0; }
+  .reveal.pre { opacity: 1; transform: none; }
+  .track { width: auto; flex-wrap: wrap; padding-inline: 16px; }
+}
+
+
+/* ===== Acréscimos da versão pública (sem atributos style inline, por causa da CSP) ===== */
+.s0 { padding-top: 0; }
+.skip { position: absolute; left: 12px; top: -60px; z-index: 100; background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 10px; font-weight: 600; text-decoration: none; }
+.skip:focus { top: 12px; }
+.btn.wa { background: #128C4B; color: #fff; box-shadow: 0 6px 18px rgba(18,140,75,.3); }
+.btn.wa:hover { box-shadow: 0 10px 24px rgba(18,140,75,.4); }
+.btn.big { padding: 18px 28px; font-size: 17px; }
+.trust { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 22px; padding: 0; list-style: none; font-size: 14.5px; color: var(--muted); }
+.trust li { display: inline-flex; gap: 8px; align-items: center; }
+.trust svg { width: 17px; height: 17px; fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.note { margin-top: 18px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 85%, transparent); font-size: 14px; line-height: 1.55; color: var(--muted); max-width: 40em; }
+.note b { color: var(--ink); font-weight: 600; }
+
+/* Vitrine do produto */
+.show { background: var(--surface); border-block: 1px solid var(--line); margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.tab { font: 600 15px/1 var(--f-body); padding: 12px 18px; border-radius: 99px; border: 1.5px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; transition: all .18s ease; }
+.tab:hover { border-color: var(--accent); color: var(--ink); }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pane { display: grid; grid-template-columns: .8fr 1.6fr; gap: 32px; align-items: start; }
+.pane[hidden] { display: none; }
+.pane h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 12px; }
+.pane p { color: var(--muted); font-size: 16.5px; }
+.pane .caption { margin-top: 16px; font-size: 13.5px; }
+.pane ul { margin: 16px 0 0; padding-left: 20px; color: var(--muted); font-size: 16px; display: grid; gap: 8px; }
+.frame { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+.frame-bar { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.frame-bar .addr { font: 400 12.5px/1 var(--f-mono); color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frame img { display: block; width: 100%; height: auto; }
+.phone-wrap { display: grid; place-items: center; background: var(--surface-2); border-radius: 14px; padding: 28px 16px; }
+.phone { width: min(300px, 100%); border: 9px solid var(--ink); border-radius: 34px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+.phone img { display: block; width: 100%; height: auto; }
+
+/* Em que pé estamos */
+.stat3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; border-top: 5px solid var(--accent); display: flex; flex-direction: column; gap: 12px; }
+.stat.mid { border-top-color: var(--warn); }
+.stat.low { border-top-color: var(--muted); }
+.stat h3 { font-size: 1.2rem; font-weight: 600; }
+.stat ul { margin: 0; padding-left: 20px; display: grid; gap: 9px; color: var(--muted); font-size: 15.5px; }
+.stat li::marker { color: var(--accent); }
+.stat.mid li::marker { color: var(--warn); }
+.stat.low li::marker { color: var(--muted); }
+
+/* Contato */
+.contact-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.mailtxt { margin-top: 14px; font: 500 14px/1.5 var(--f-mono); color: var(--muted); }
+.mailtxt b { color: var(--ink); user-select: all; }
+.result .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.privacy { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+
+/* Barra de ação no celular */
+.stick { position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; display: none; gap: 10px; padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line); transform: translateY(110%); transition: transform .25s ease; }
+.stick.on { transform: none; }
+.stick .btn { flex: 1; padding: 14px 12px; font-size: 15px; width: auto; }
+
+.steps-note { margin-top: 26px; color: var(--muted); font-size: 14.5px; }
+
+@media (max-width: 960px) {
+  .pane, .stat3 { grid-template-columns: 1fr; }
+  .stick { display: flex; }
+  body { padding-bottom: 76px; }
+}
+@media (max-width: 520px) {
+  .tab { padding: 11px 14px; font-size: 14px; }
+  .contact-row .btn { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stick { transition: none; }
+}
+
+.row.d1 { --d: .5s; } .row.d2 { --d: 1.2s; } .row.d3 { --d: 1.9s; }
+.strong { color: var(--ink); }
+.col li svg.mute { stroke: var(--muted); }
+footer a { color: var(--ink); text-underline-offset: 3px; }
+.mailtxt b { font-weight: 500; }
+
+/* Correções do primeiro teste visual */
+.nav a.btn { color: var(--accent-ink); }
+.nav a.btn:hover { color: var(--accent-ink); }
+.hero h1 { font-size: clamp(2.3rem, 4.4vw, 3.7rem); }
+.btn.big { padding: 16px 22px; font-size: 16.5px; }
+.btn.ghost.big { padding: 14px 20px; }
+
+.hero { overflow: clip; }
+.marquee { overflow: clip; }
+
+.final { overflow: clip; }
+.nb { white-space: nowrap; }
+
+.sprite { position: absolute; }
+</style>
+</head>
+<body>
+<a class="skip" href="#conteudo">Ir para o conteúdo</a>
+<svg width="0" height="0" class="sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v6M15 2v6M7 8h10v4a5 5 0 0 1-10 0V8zM12 17v5"/></symbol>
+    <symbol id="i-stack" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2L12 3zM12 10v5M12 18.5v.01"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><path d="M3 6h18v14H3zM3 10h18M8 3v4M16 3v4M12 13v3l2 1"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 14l2 2 4-4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4M12 15v2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5.5a3 3 0 0 1 0 5.5M18 14.5c1.8.8 3 2.6 3 5.5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h8"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 8v4l3 2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5l8-3zM9 12l2 2 4-4"/></symbol>
+  </defs>
+</svg>
+<div class="progress" aria-hidden="true"><i id="bar"></i></div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#topo" aria-label="Apura, início">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M8 17l5 5 11-12" fill="none" stroke="var(--accent-ink)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Apura
+    </a>
+    <nav class="nav" aria-label="Principal">
+      <a href="#produto">O produto</a>
+      <a href="#como">Como funciona</a>
+      <a href="#recursos">Recursos</a>
+      <a href="#quem">Para quem</a>
+      <a href="#faq">Perguntas</a>
+      <a class="btn small keep" href="#contato">Entrar na lista de espera</a>
+    </nav>
+  </div>
+</header>
+
+<main id="conteudo">
+  <div class="hero" id="topo">
+    <div class="grid-bg" aria-hidden="true"></div>
+    <div class="wrap hero-in">
+      <div>
+        <span class="pill"><span class="dot" aria-hidden="true"></span> <b>Lista de espera</b> para escritórios com clientes no regime regular</span>
+        <h1>Antes que o prazo passe, <em>confira a CBS</em> de toda a carteira.</h1>
+        <p class="lede">O Apura busca a apuração assistida da Receita, cruza com as <span class="nb">NF-e</span> de cada cliente e entrega uma fila de exceções com causa provável, prazo e registro de quem conferiu. Do portal de um CNPJ por vez para uma fila só.</p>
+        <div class="cta-row">
+          <a class="btn big" href="#contato"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-bolt"/></svg> Quero entrar na lista de espera</a>
+          <a class="btn ghost big" href="#produto">Ver o produto por dentro</a>
+        </div>
+        <ul class="trust">
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg> Fica ao lado do seu sistema contábil</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg> Sem cookies nem rastreadores nesta página</li>
+        </ul>
+        <p class="note"><b>Em que pé estamos:</b> o Apura roda hoje contra um simulador da Receita, com dados fictícios. Ainda não foi ligado à API real. Segundo fontes secundárias, o silêncio até o fim do ajuste pode valer como aceite do saldo; prazo e efeito ainda não foram confirmados na norma e o Apura não os apresenta como regra oficial.</p>
+      </div>
+
+      <div class="panel" role="img" aria-label="Exemplo de painel de conferência: três itens conciliados, um com diferença de centavos e um débito sem nota, com sugestão de ação.">
+        <div class="panel-h"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="t">Cliente Exemplo Ltda · PA 01/2027</span><span class="tag-ex">dados de exemplo</span></div>
+        <div class="rows">
+          <div class="row ok d1"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check"/></svg></span><div class="k"><b>NF-e de saída</b><span>chave …4821 · conciliada</span></div><span class="v">R$ 11,25</span></div>
+          <div class="row ok d2"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check"/></svg></span><div class="k"><b>NF-e de saída</b><span>chave …4822 · conciliada</span></div><span class="v">R$ 42,80</span></div>
+          <div class="row ok d3"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check"/></svg></span><div class="k"><b>Crédito de entrada</b><span>chave …7710 · apropriado</span></div><span class="v">R$ 90,00</span></div>
+          <div class="row warn"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check"/></svg></span><div class="k"><b>Valor divergente</b><span>nota R$ 11,30 · apuração R$ 11,25</span></div><span class="v">− R$ 0,05</span></div>
+          <div class="row bad"><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><use href="#i-x"/></svg></span><div class="k"><b>Débito sem nota</b><span>chave …9033 · ajuste até 25/02</span></div><span class="v">R$ 120,00</span></div>
+        </div>
+        <div class="hint"><b>Causa provável e ação</b>A Receita apurou um débito para uma chave que não está nos XMLs enviados. Importe o XML ou conteste dentro do período de ajuste.<small>Orientação de apoio, não é regra oficial. Confirme na norma.</small></div>
+        <div class="panel-f"><span>5 itens · 3 conciliados</span><span>cota de coleta hoje: 3 de 4</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="marquee" aria-label="Tipos de exceção que o Apura aponta">
+    <div class="track">
+      <span class="chip b"><i></i>débito sem nota</span><span class="chip w"><i></i>nota sem débito</span><span class="chip w"><i></i>valor divergente</span><span class="chip b"><i></i>saldo devedor em aberto</span><span class="chip w"><i></i>crédito a apropriar envelhecido</span><span class="chip w"><i></i>crédito sem nota de entrada</span><span class="chip"><i></i>cancelamento e devolução para revisão</span>
+      <span class="chip b" aria-hidden="true"><i></i>débito sem nota</span><span class="chip w" aria-hidden="true"><i></i>nota sem débito</span><span class="chip w" aria-hidden="true"><i></i>valor divergente</span><span class="chip b" aria-hidden="true"><i></i>saldo devedor em aberto</span><span class="chip w" aria-hidden="true"><i></i>crédito a apropriar envelhecido</span><span class="chip w" aria-hidden="true"><i></i>crédito sem nota de entrada</span><span class="chip" aria-hidden="true"><i></i>cancelamento e devolução para revisão</span>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="sec-h reveal">
+        <span class="eyebrow">O problema</span>
+        <h2>A Receita faz a conta. A conferência continua sendo sua.</h2>
+        <p>Com a apuração assistida, o saldo de CBS chega pronto. Conferir 40, 80 ou 120 clientes por portal, um CNPJ de cada vez, é onde o tempo do escritório vai embora.</p>
+      </div>
+      <div class="three">
+        <div class="fact reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg></span><h3>Quem cala, aceita</h3><p>Segundo a leitura de consultorias da regulamentação, sem manifestação no prazo o saldo apurado é presumido correto. Uma divergência não vista vira débito ou crédito perdido.</p></div>
+        <div class="fact reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-search"/></svg></span><h3>A causa está nas notas</h3><p>Nota cancelada que continua lançada, devolução sem CBS, fornecedor que classificou errado. Achar a causa exige cruzar o XML com o que a Receita apurou.</p></div>
+        <div class="fact reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clock"/></svg></span><h3>O prazo é por cliente</h3><p>Cada CNPJ tem a sua janela de ajuste. Sem um painel único, o último dia chega sem aviso e a conferência vira correria.</p></div>
+      </div>
+      <p class="src reveal">Base: art. 46 da LC 214/2025 e Decreto 12.955/2026, conforme a leitura de consultorias e do manual da Plataforma CBS da Receita. Prazos e efeitos em 2026 e 2027 ainda variam entre as fontes. Confirme na norma antes de orientar clientes.</p>
+    </div>
+  </section>
+
+  <div class="show" id="produto">
+    <section>
+      <div class="wrap">
+        <div class="sec-h reveal">
+          <span class="eyebrow">O produto por dentro</span>
+          <h2>Telas reais da versão de testes</h2>
+          <p>Capturas do sistema funcionando, com clientes e valores fictícios, contra um simulador da Receita.</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Telas do produto">
+          <button class="tab" role="tab" id="tab-hoje" aria-controls="pane-hoje" aria-selected="true" type="button">Hoje</button>
+          <button class="tab" role="tab" id="tab-carteira" aria-controls="pane-carteira" aria-selected="false" tabindex="-1" type="button">Carteira</button>
+          <button class="tab" role="tab" id="tab-causa" aria-controls="pane-causa" aria-selected="false" tabindex="-1" type="button">Causa e ação</button>
+          <button class="tab" role="tab" id="tab-dossie" aria-controls="pane-dossie" aria-selected="false" tabindex="-1" type="button">Dossiê</button>
+          <button class="tab" role="tab" id="tab-celular" aria-controls="pane-celular" aria-selected="false" tabindex="-1" type="button">No celular</button>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-hoje" aria-labelledby="tab-hoje">
+          <div>
+            <h3>Hoje: ninguém aceita por silêncio</h3>
+            <p>A lista do que vence antes e ainda não foi conferido, com alerta em 7, 3 e 1 dia, quem conferiu e período reaberto se os dados mudarem.</p>
+            <p class="caption">As datas são premissas provisórias, e o aviso aparece só na tela, sem e-mail nem push.</p>
+          </div>
+          <div class="frame"><div class="frame-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="addr">Apura · Hoje · dados fictícios</span></div><img src="/img/hoje.webp" width="1200" height="806" alt="Tela Hoje do Apura: lista de períodos por cliente, com os que passaram do prazo em vermelho, dias restantes e botão para confirmar o período." loading="lazy" decoding="async"></div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-carteira" aria-labelledby="tab-carteira" hidden>
+          <div>
+            <h3>A carteira em uma tela</h3>
+            <p>Regime, conexão, exceções abertas, as de alta severidade, o período e a prontidão de cada cliente. Busca e filtros por regime e conexão.</p>
+            <p class="caption">O regime é uma etiqueta de organização: a regra de quem entra na apuração assistida ainda será confirmada na norma.</p>
+          </div>
+          <div class="frame"><div class="frame-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="addr">Apura · Carteira · dados fictícios</span></div><img src="/img/carteira.webp" width="1200" height="919" alt="Tela Carteira do Apura: tabela de clientes com regime, conexão, exceções abertas, alta severidade, período e prontidão." loading="lazy" decoding="async"></div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-causa" aria-labelledby="tab-causa" hidden>
+          <div>
+            <h3>Causa provável e ação, com fonte</h3>
+            <p>Para cada divergência, as causas mais comuns e os passos sugeridos. Cada item mostra a fonte e o grau de confiança: norma, orientação de terceiros ou hipótese.</p>
+            <p class="caption">É orientação de apoio. Nunca é apresentada como regra oficial.</p>
+          </div>
+          <div class="frame"><div class="frame-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="addr">Apura · Exceção · dados fictícios</span></div><img src="/img/causa-acao.webp" width="1200" height="956" alt="Detalhe de uma exceção no Apura: crédito a apropriar envelhecido, com causas prováveis e ações sugeridas, cada uma com selo de confiança e fonte." loading="lazy" decoding="async"></div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-dossie" aria-labelledby="tab-dossie" hidden>
+          <div>
+            <h3>Dossiê de evidência por período</h3>
+            <p>Um documento por cliente e período para guardar o que foi conferido, por quem, com quais parâmetros e qual orientação, mais a trilha de auditoria. Sai em HTML pronto para imprimir e em JSON.</p>
+            <p class="caption">O hash do rodapé mostra que o texto não mudou depois de gerado. Não é assinatura digital.</p>
+          </div>
+          <div class="frame"><div class="frame-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="addr">Apura · Dossiê · dados fictícios</span></div><img src="/img/dossie.webp" width="1200" height="750" alt="Prévia do dossiê de evidência do Apura, com aviso, identificação do cliente, período de apuração e parâmetros usados." loading="lazy" decoding="async"></div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="pane-celular" aria-labelledby="tab-celular" hidden>
+          <div>
+            <h3>Também no celular</h3>
+            <p>A mesma lista de períodos e as ações principais em tela pequena, para conferir um prazo sem abrir o computador.</p>
+            <p class="caption">Teste em largura de 375 px feito com navegador automatizado.</p>
+          </div>
+          <div class="phone-wrap"><div class="phone"><img src="/img/celular.webp" width="375" height="780" alt="Tela Hoje do Apura em largura de celular." loading="lazy" decoding="async"></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="como">
+    <section>
+      <div class="wrap">
+        <div class="sec-h reveal">
+          <span class="eyebrow">Como funciona</span>
+          <h2>Três passos da credencial à evidência</h2>
+          <p>A coleta foi desenhada para a API de apuração assistida que a Receita disponibiliza sem custo. Cada coleta respeita a cota diária e fica registrada.</p>
+        </div>
+        <div class="steps">
+          <div class="step reveal"><h3>Conecte a carteira</h3><p>Importe os clientes por CSV e cadastre a credencial gerada no portal da Receita, como contribuinte ou procurador digital. O segredo é guardado cifrado e nunca volta para a tela.</p></div>
+          <div class="step reveal"><h3>Cruze com as notas</h3><p>Suba os XMLs de entrada e saída. O Apura casa cada débito e cada crédito com a nota pela chave e aponta o que não bate.</p></div>
+          <div class="step reveal"><h3>Resolva e registre</h3><p>Trabalhe a fila por severidade e prazo. Cada decisão guarda quem fez, quando e por quê, pronta para uma revisão futura.</p></div>
+        </div>
+        <div class="diagram reveal" role="img" aria-label="Diagrama: a API da Receita e os XMLs do cliente alimentam o Apura, que produz a fila de exceções, o calendário e a evidência.">
+          <svg viewBox="0 0 760 220" fill="none">
+            <rect x="10" y="22" width="190" height="64" rx="12" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+            <text x="105" y="50" text-anchor="middle" font-family="var(--f-body)" font-size="15" font-weight="600" fill="var(--ink)">API da Receita</text>
+            <text x="105" y="70" text-anchor="middle" font-family="var(--f-mono)" font-size="10" fill="var(--muted)">débitos · créditos · pagamentos</text>
+            <rect x="10" y="134" width="190" height="64" rx="12" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+            <text x="105" y="162" text-anchor="middle" font-family="var(--f-body)" font-size="15" font-weight="600" fill="var(--ink)">XML das NF-e</text>
+            <text x="105" y="182" text-anchor="middle" font-family="var(--f-mono)" font-size="10" fill="var(--muted)">entrada e saída do cliente</text>
+            <path class="dash" d="M200 54 C 262 54, 262 110, 318 110" stroke="var(--accent)" stroke-width="2.2"/>
+            <path class="dash" d="M200 166 C 262 166, 262 110, 318 110" stroke="var(--accent)" stroke-width="2.2"/>
+            <rect x="318" y="68" width="124" height="84" rx="16" fill="var(--accent)"/>
+            <path d="M356 112l12 12 24-26" stroke="var(--accent-ink)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="380" y="146" text-anchor="middle" font-family="var(--f-display)" font-size="14" font-weight="800" fill="var(--accent-ink)">Apura</text>
+            <path class="dash" d="M442 110 C 500 110, 500 37, 556 37" stroke="var(--accent)" stroke-width="2.2"/>
+            <path class="dash" d="M442 110 L 556 110" stroke="var(--accent)" stroke-width="2.2"/>
+            <path class="dash" d="M442 110 C 500 110, 500 183, 556 183" stroke="var(--accent)" stroke-width="2.2"/>
+            <rect x="556" y="8" width="194" height="58" rx="12" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+            <text x="653" y="43" text-anchor="middle" font-family="var(--f-body)" font-size="15" font-weight="600" fill="var(--ink)">Fila de exceções</text>
+            <rect x="556" y="81" width="194" height="58" rx="12" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+            <text x="653" y="116" text-anchor="middle" font-family="var(--f-body)" font-size="15" font-weight="600" fill="var(--ink)">Calendário de ajuste</text>
+            <rect x="556" y="154" width="194" height="58" rx="12" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+            <text x="653" y="189" text-anchor="middle" font-family="var(--f-body)" font-size="15" font-weight="600" fill="var(--ink)">Dossiê e CSV</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="s0">
+    <div class="wrap">
+      <div class="sec-h reveal">
+        <span class="eyebrow">Transparência</span>
+        <h2>O que já existe, o que falta e o que ainda é dúvida</h2>
+        <p>Preferimos dizer onde estamos a prometer o que ainda não provamos.</p>
+      </div>
+      <div class="stat3">
+        <div class="stat reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <h3>Já existe e foi testado</h3>
+          <ul>
+            <li>Sistema completo rodando, com testes automatizados e testes em navegador real.</li>
+            <li>Coleta, cruzamento, fila, períodos, dossiê, esforço e perfis, com dados fictícios.</li>
+            <li>Contra um simulador da Receita feito a partir da documentação pública.</li>
+          </ul>
+        </div>
+        <div class="stat mid reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-users"/></svg></span>
+          <h3>Falta, e precisa de você</h3>
+          <ul>
+            <li>Ligar na API real da Receita, com a credencial de um escritório.</li>
+            <li>Validar com clientes reais os pontos que hoje são hipótese nossa.</li>
+            <li>Layouts de exportação do seu sistema contábil, confirmados com o fornecedor.</li>
+          </ul>
+        </div>
+        <div class="stat low reveal">
+          <span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-alert"/></svg></span>
+          <h3>Ainda em aberto na norma</h3>
+          <ul>
+            <li>Prazo exato do período de ajuste e o efeito do silêncio.</li>
+            <li>Quais clientes do Simples entram na apuração assistida.</li>
+            <li>Como o contador acessa por procuração. Datas e regras são parâmetros que você ajusta.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="recursos">
+    <div class="wrap">
+      <div class="sec-h reveal">
+        <span class="eyebrow">Recursos</span>
+        <h2>Feito para quem cuida de uma carteira inteira</h2>
+        <p>"Versão de testes" quer dizer que o recurso existe e foi exercitado em navegador real, sempre com dados sintéticos e contra o simulador. Nenhum foi usado por escritório real.</p>
+      </div>
+      <div class="feats">
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stack"/></svg></span><h3>Carteira em uma tela</h3><p>Todos os clientes com regime, estado da conexão, exceções abertas e as de alta severidade em destaque.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-down"/></svg></span><h3>Conectar a carteira por CSV</h3><p>Pré-visualização e erros linha a linha antes de gravar; reimportar não duplica nem sobrescreve o que você já decidiu. Checklist de prontidão por cliente.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plug"/></svg></span><h3>Coleta pela API da Receita</h3><p>Débitos, créditos e pagamentos, respeitando a cota. Se o aviso não chegar, consulta a situação; se o arquivo falhar, repete o download dentro das 48 horas. Hoje só contra o simulador.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-search"/></svg></span><h3>Cruzamento com o XML</h3><p>Sete tipos de exceção, de débito sem nota a crédito envelhecido, com tolerância em centavos que você define.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bolt"/></svg></span><h3>Causa provável e ação</h3><p>Para cada divergência, a causa mais comum e o próximo passo, sempre com fonte e grau de confiança.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cal"/></svg></span><h3>Hoje e calendário do ajuste</h3><p>O que vence antes e ainda não foi conferido, com alerta em 7, 3 e 1 dia e período reaberto se os dados mudarem. Datas são premissas provisórias.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-file"/></svg></span><h3>Dossiê de evidência</h3><p>Documento por cliente e período com parâmetros, decisões e trilha. HTML para imprimir e JSON, com hash do conteúdo (não é assinatura digital).</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-history"/></svg></span><h3>Trilha de auditoria</h3><p>Quem mudou o quê e quando, com a nota de justificativa. O registro é conferido no servidor; a tela de consulta ainda está em desenvolvimento.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-users"/></svg></span><h3>Perfis e alçada</h3><p>Conferente, aprovador e administrador. Ignorar exceção alta e confirmar período com exceção alta viram proposta; ninguém aprova a própria. Senha, sessões e segundo fator.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-coin"/></svg></span><h3>Esforço e honorários</h3><p>Minutos gastos por cliente e uma base de honorário em centavos (minutos × custo-hora ÷ 60). É base de cálculo, não preço sugerido.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-down"/></svg></span><h3>Exportação em CSV</h3><p>Exceções por cliente e período, prontas para planilha. Layouts de cada sistema contábil só depois de confirmados com o fornecedor.</p><span class="badge">Versão de testes</span></article>
+        <article class="feat reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clock"/></svg></span><h3>Mais por vir</h3><p>Comentários e mensagem pronta ao cliente, ação em lote, histórico por período, caixa de entrada de XML por pasta e arquivo de prazos para agenda.</p><span class="badge soon">Em desenvolvimento</span></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="s0">
+    <div class="wrap">
+      <div class="sec-h reveal">
+        <span class="eyebrow">A rotina do escritório</span>
+        <h2>Menos planilha por cliente, mais conferência que se prova</h2>
+      </div>
+      <div class="vs">
+        <div class="col bad-c reveal">
+          <h3>Rotina manual</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-x"/></svg><span>Um acesso ao portal por CNPJ, todo mês.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-x"/></svg><span>Planilha própria para cruzar notas e apuração.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-x"/></svg><span>Prazo de ajuste controlado de cabeça.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-x"/></svg><span>Justificativa espalhada em e-mail e WhatsApp.</span></li>
+          </ul>
+        </div>
+        <div class="col good reveal">
+          <h3>Com o Apura</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>A carteira inteira coletada e conferida em uma fila.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Cruzamento automático pela chave de cada nota.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Calendário por cliente com dias restantes.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Cada decisão registrada com responsável e motivo.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s0">
+    <div class="wrap">
+      <div class="money reveal">
+        <div>
+          <span class="eyebrow">Receita para o escritório</span>
+          <h2>Conferência registrada é serviço que dá para cobrar</h2>
+          <p>As orientações de mercado sugerem justificar o honorário novo com horas por cliente vezes o custo-hora do escritório. Com a conferência registrada no Apura, você sabe quanto esforço cada cliente exige e leva uma conta defensável para a conversa.</p>
+        </div>
+        <div class="calc" role="img" aria-label="Exemplo ilustrativo de cálculo de honorário: horas de conferência vezes custo-hora.">
+          <div class="calc-r"><span>Horas de conferência no mês</span><span>3,5 h</span></div>
+          <div class="calc-r"><span>Custo-hora do escritório</span><span>R$ 90,00</span></div>
+          <hr>
+          <div class="calc-r tot"><span>Base para o honorário</span><span>R$ 315,00</span></div>
+          <small>Exemplo ilustrativo com números inventados. Não é preço do Apura nem recomendação de valor.</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="quem" class="s0">
+    <div class="wrap">
+      <div class="sec-h reveal">
+        <span class="eyebrow">Para quem</span>
+        <h2>Para o escritório com clientes no regime regular de CBS</h2>
+        <p>Dizer isso com clareza evita a sua perda de tempo e a nossa.</p>
+      </div>
+      <div class="who">
+        <div class="col good reveal">
+          <h3>Faz sentido se você tem</h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Clientes no Lucro Presumido ou no Lucro Real.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Clientes do Simples que optaram pelo regime regular de IBS e CBS.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Volume de notas em que cruzar na mão já não cabe no mês.</span></li>
+          </ul>
+        </div>
+        <div class="col reveal">
+          <h3>Provavelmente não é para você se</h3>
+          <ul>
+            <li><svg class="mute" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-x"/></svg><span>Toda a carteira é Simples com IBS e CBS dentro do DAS. Pelas fontes que lemos, esses clientes ficam fora da apuração assistida.</span></li>
+            <li><svg class="mute" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-x"/></svg><span>Você procura um sistema de escrituração. O Apura confere, não substitui o seu sistema.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="seguranca" class="s0">
+    <div class="wrap">
+      <div class="sec-h reveal">
+        <span class="eyebrow">Segurança</span>
+        <h2>Dados fiscais de terceiros pedem cuidado desde o desenho</h2>
+        <p>É assim que o projeto está desenhado e testado. Uma auditoria de segurança independente ainda não foi feita e será anunciada quando houver.</p>
+      </div>
+      <div class="sec-grid">
+        <div class="sec-it reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg></span><h3>Segredo cifrado</h3><p>A credencial da Receita fica cifrada em repouso e nunca é devolvida pela API.</p></div>
+        <div class="sec-it reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shield"/></svg></span><h3>Isolamento por escritório</h3><p>Cada escritório enxerga só a sua carteira, em toda consulta.</p></div>
+        <div class="sec-it reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-history"/></svg></span><h3>Trilha de auditoria</h3><p>Ações que mudam estado são registradas com autor e horário.</p></div>
+        <div class="sec-it reveal"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-search"/></svg></span><h3>Logs sem dado sensível</h3><p>CNPJ completo, tokens e payloads da Receita não vão para o log.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="s0">
+    <div class="wrap">
+      <div class="sec-h reveal"><span class="eyebrow">Perguntas</span><h2>O que os escritórios costumam perguntar</h2></div>
+      <div class="faq">
+        <details class="reveal"><summary>Isso já funciona com a API real da Receita?</summary><p>Ainda não. A API de apuração assistida existe e a Receita a libera de forma gradual, em produção restrita e beta, mas o Apura nunca foi chamado contra ela. Hoje roda contra um simulador nosso, que implementa o que lemos na documentação pública: estrutura dos campos, fluxo assíncrono (pedir, aguardar o aviso, baixar) e cota diária. Vários pontos são hipóteses nossas, como a URL e a validade do token, o formato do aviso (webhook) e o corpo da resposta quando a cota acaba. Ligar na API real exigirá validar e ajustar esses pontos com uma credencial de teste. O piloto serve para isso.</p></details>
+        <details class="reveal"><summary>Integra com o meu sistema contábil?</summary><p>Hoje a saída é CSV. Os sistemas contábeis costumam importar por arquivo, e cada um tem o seu layout. Vamos construir os layouts depois de confirmar o formato com cada fornecedor, começando pelo que os escritórios do piloto usarem.</p></details>
+        <details class="reveal"><summary>Meus clientes do Simples entram?</summary><p>Pelas fontes que consultamos, quem fica no Simples com IBS e CBS dentro do DAS não participa da apuração assistida, e quem optou pelo regime regular participa. Estamos confirmando isso na norma. Se a sua carteira é só Simples tradicional, o Apura ainda não é para você.</p></details>
+        <details class="reveal"><summary>A apuração assistida já vale em 2026?</summary><p>As fontes divergem. Em 2026 ela funciona em ambiente de testes, e o efeito jurídico pleno é tratado como a partir de 2027 em boa parte delas. Por isso o Apura mostra a fonte de cada orientação e não afirma prazo legal que a norma não confirma.</p></details>
+        <details class="reveal"><summary>Quanto custa?</summary><p>Ainda não há preço publicado. O valor do piloto será combinado com os primeiros escritórios, com base no número de CNPJs da carteira.</p></details>
+        <details class="reveal"><summary>Esta página coleta meus dados?</summary><p>Não. Não há cookies, rastreadores nem analytics. O formulário abaixo só monta o texto do seu pedido no seu navegador; ele só sai de lá quando você clica para enviar por WhatsApp ou e-mail.</p></details>
+        <details class="reveal"><summary>O Apura tem ligação com a Receita Federal?</summary><p>Não. Usa a API pública que a Receita disponibiliza para contribuintes e procuradores. O Apura é um produto independente.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section id="contato" class="s0">
+    <div class="wrap">
+      <div class="final reveal">
+        <div>
+          <span class="eyebrow">Lista de espera e piloto</span>
+          <h2>Entre com poucos clientes e veja a fila funcionando</h2>
+          <p class="sub">Buscamos escritórios dispostos a testar com uma parte da carteira e dar retorno semanal. Em troca, você influencia o que entra primeiro.</p>
+          <ul class="checks">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Começa com uma parte da carteira, sem migração.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Você decide o que priorizar a partir do uso real.</span></li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><span>Condições do piloto combinadas antes de começar.</span></li>
+          </ul>
+          <div class="contact-row">
+            <a class="btn wa" id="cta-wa" href="#contato" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-bolt"/></svg> Falar no WhatsApp</a>
+            <a class="btn ghost" id="cta-mail" href="#contato"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-file"/></svg> Enviar e-mail</a>
+          </div>
+          <p class="mailtxt">E-mail: <b id="mail-txt"></b><br>WhatsApp: <b id="wa-txt"></b></p>
+        </div>
+        <form id="pedido" novalidate>
+          <label for="f-esc">Nome do escritório<input id="f-esc" name="escritorio" autocomplete="organization" required></label>
+          <div class="two">
+            <label for="f-nome">Seu nome<input id="f-nome" name="nome" autocomplete="name" required></label>
+            <label for="f-cli">Clientes no regime regular
+              <select id="f-cli" name="clientes">
+                <option value="até 10">até 10</option>
+                <option value="de 11 a 30">de 11 a 30</option>
+                <option value="de 31 a 100">de 31 a 100</option>
+                <option value="mais de 100">mais de 100</option>
+              </select>
+            </label>
+          </div>
+          <label for="f-sis">Sistema contábil que usa hoje<input id="f-sis" name="sistema"></label>
+          <label for="f-msg">O que mais pesa na conferência hoje<textarea id="f-msg" name="mensagem" rows="3"></textarea></label>
+          <button class="btn" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-file"/></svg> Montar meu pedido de entrada</button>
+          <p class="privacy">Nada é enviado por este formulário. Ele só monta o texto no seu navegador.</p>
+          <div class="result" id="resultado" role="status" aria-live="polite">
+            <strong>Pedido montado. Ainda não foi enviado.</strong>
+            <pre id="texto"></pre>
+            <div class="actions">
+              <a class="btn wa small" id="send-wa" href="#contato" rel="noopener">Enviar por WhatsApp</a>
+              <a class="btn ghost small" id="send-mail" href="#contato">Enviar por e-mail</a>
+              <button class="btn ghost small" type="button" id="copiar">Copiar texto</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="stick" id="stick" aria-hidden="true">
+  <a class="btn" href="#contato" tabindex="-1">Entrar na lista de espera</a>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span><strong class="strong">Apura</strong> · nome provisório · produto em desenvolvimento, em fase de testes. Uma iniciativa da <a href="https://lumecoding.com/" rel="noopener">Lumecoding</a>.</span>
+    <span>O Apura é independente e não tem vínculo com a Receita Federal, o CGIBS ou qualquer fornecedor de sistema contábil citado. Os dados mostrados nesta página são exemplos inventados. As referências à legislação seguem a leitura de fontes públicas e não substituem a consulta à norma e ao seu assessor jurídico.</span>
+  </div>
+</footer>
+
+<script>(function () {
+  'use strict';
+  /* Contato oficial da Lumecoding (o mesmo do site institucional). Trocar aqui se mudar. */
+  var CONTATO = { email: 'contato@lumecoding.com', whatsapp: '5511948485386', whatsappLabel: '(11) 94848-5386' };
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function $(id) { return document.getElementById(id); }
+
+  /* Barra de progresso */
+  var bar = $('bar');
+  function prog() {
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (h > 0 ? Math.min(100, (window.scrollY / h) * 100) : 0) + '%';
+  }
+  window.addEventListener('scroll', prog, { passive: true }); prog();
+
+  /* Entrada suave das seções, sempre com saída segura */
+  var els = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  if (!reduce && 'IntersectionObserver' in window) {
+    var below = els.filter(function (el) { return el.getBoundingClientRect().top > window.innerHeight * 0.92; });
+    below.forEach(function (el) { el.classList.add('pre'); });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.remove('pre'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    below.forEach(function (el) { io.observe(el); });
+    setTimeout(function () { below.forEach(function (el) { el.classList.remove('pre'); }); }, 6000);
+  }
+
+  /* Abas do produto */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function selecionar(tab, foco) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      var p = $(t.getAttribute('aria-controls'));
+      if (p) p.hidden = !on;
+    });
+    if (foco) tab.focus();
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { selecionar(t, false); });
+    t.addEventListener('keydown', function (ev) {
+      var k = ev.key, n = null;
+      if (k === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+      else if (k === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (k === 'Home') n = tabs[0];
+      else if (k === 'End') n = tabs[tabs.length - 1];
+      if (n) { ev.preventDefault(); selecionar(n, true); }
+    });
+  });
+
+  /* Barra de ação no celular: aparece depois do topo e some na seção de contato */
+  var stick = $('stick'), topo = $('topo'), contato = $('contato');
+  if (stick && 'IntersectionObserver' in window) {
+    var visTopo = true, visContato = false;
+    var atualiza = function () { stick.classList.toggle('on', !visTopo && !visContato); };
+    new IntersectionObserver(function (e) { visTopo = e[0].isIntersecting; atualiza(); }).observe(topo);
+    new IntersectionObserver(function (e) { visContato = e[0].isIntersecting; atualiza(); }).observe(contato);
+  }
+
+  /* Contato */
+  var msgBase = 'Olá! Vi o Apura e quero entrar na lista de espera.';
+  function wa(texto) { return 'https://wa.me/' + CONTATO.whatsapp + '?text=' + encodeURIComponent(texto); }
+  function mail(assunto, corpo) { return 'mailto:' + CONTATO.email + '?subject=' + encodeURIComponent(assunto) + '&body=' + encodeURIComponent(corpo); }
+  $('cta-wa').href = wa(msgBase);
+  $('cta-mail').href = mail('Apura: lista de espera', msgBase);
+  $('mail-txt').textContent = CONTATO.email;
+  $('wa-txt').textContent = CONTATO.whatsappLabel;
+
+  var form = $('pedido'), res = $('resultado'), txt = $('texto'), copiar = $('copiar');
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var d = new FormData(form);
+    var esc = String(d.get('escritorio') || '').trim();
+    var nome = String(d.get('nome') || '').trim();
+    if (!esc || !nome) { (esc ? $('f-nome') : $('f-esc')).focus(); return; }
+    var linhas = [
+      'Pedido de entrada na lista de espera do Apura',
+      'Escritório: ' + esc,
+      'Contato: ' + nome,
+      'Clientes no regime regular: ' + d.get('clientes'),
+      'Sistema contábil: ' + (String(d.get('sistema') || '').trim() || 'não informado'),
+      'O que mais pesa hoje: ' + (String(d.get('mensagem') || '').trim() || 'não informado')
+    ];
+    var texto = linhas.join('\n');
+    txt.textContent = texto;
+    $('send-wa').href = wa(texto);
+    $('send-mail').href = mail('Apura: lista de espera, ' + esc, texto);
+    res.classList.add('on');
+    res.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+  });
+  copiar.addEventListener('click', function () {
+    function sel() { var r = document.createRange(); r.selectNodeContents(txt); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt.textContent).then(function () { copiar.textContent = 'Copiado'; }, sel);
+    } else { sel(); }
+  });
+})();
+</script>
+</body>
+</html>
