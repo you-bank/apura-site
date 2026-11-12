@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3+KgbDkisfF6cJ1tvjQ4Qus7zYSyov6hn7UskuxFSTY='; style-src 'sha256-SUFIK3kJldiqsURjb5cUuV2esUk1mLE/EEAvrzeSpXo=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3+KgbDkisfF6cJ1tvjQ4Qus7zYSyov6hn7UskuxFSTY='; style-src 'sha256-fbkK+Zj0PTygjaM0ONcUlY/3OPyo7qCl5xEI8uKgOUg=' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Apura: conferência da apuração assistida de CBS</title>
 <meta name="description" content="Conferidor da apuração assistida de CBS para escritórios contábeis: coleta, cruza com as NF-e de cada cliente e entrega uma fila de exceções com prazo e registro de quem conferiu. Lista de espera aberta.">
@@ -373,6 +373,12 @@ footer a { color: var(--ink); text-underline-offset: 3px; }
 
 .final { overflow: clip; }
 .nb { white-space: nowrap; }
+
+/* Alinhamento: painel do topo sem rotação (só flutua um pouco) e abas sem salto de altura */
+.panel { transform: none; animation: floaty2 7s ease-in-out infinite; }
+@keyframes floaty2 { 50% { transform: translateY(-6px); } }
+@media (min-width: 961px) { .pane { min-height: 540px; } }
+@media (prefers-reduced-motion: reduce) { .panel { animation: none; } }
 
 .sprite { position: absolute; }
 </style>
